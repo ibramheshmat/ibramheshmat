@@ -1,4 +1,10 @@
-import { portfolioData } from "./data.js";
+import {portfolioData} from "./data.js";
+
+import {supabaseClient} from "./config/supabase.js";
+
+import {PortfolioRepository} from "./repositories/PortfolioRepository.js";
+
+import {PortfolioDataService} from "./services/PortfolioDataService.js";
 
 
 /* =========================================================
@@ -1159,10 +1165,95 @@ class PortfolioApp {
 
 
 
-const app =
-    new PortfolioApp(
-        portfolioData
+async function bootstrap() {
+
+    console.log(
+        "1️⃣ Bootstrap started"
     );
 
 
-app.start();
+    console.log(
+        "2️⃣ Supabase client:",
+        supabaseClient
+    );
+
+
+    // =========================================
+    // Direct Supabase Test
+    // =========================================
+
+    const {
+        data: testSkills,
+        error: testError
+    } =
+        await supabaseClient
+            .from("skills")
+            .select("*")
+            .order(
+                "sort_order",
+                { ascending: true }
+            );
+
+
+    console.log(
+        "3️⃣ Direct Supabase test:"
+    );
+
+
+    console.log(
+        "Supabase skills:",
+        testSkills
+    );
+
+
+    console.log(
+        "Supabase error:",
+        testError
+    );
+
+
+    // =========================================
+    // Normal architecture
+    // =========================================
+
+    const repository =
+        new PortfolioRepository(
+            supabaseClient
+        );
+
+
+    const dataService =
+        new PortfolioDataService(
+            repository,
+            portfolioData
+        );
+
+
+    const livePortfolioData =
+        await dataService.load();
+
+
+    console.log(
+        "4️⃣ Data service result:",
+        livePortfolioData
+    );
+
+
+    console.log(
+        "5️⃣ Using fallback data.js:",
+        livePortfolioData === portfolioData
+    );
+
+
+    const app =
+        new PortfolioApp(
+            livePortfolioData
+        );
+
+
+    app.start();
+
+}
+
+
+bootstrap();
